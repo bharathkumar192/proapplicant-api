@@ -125,6 +125,11 @@ db.once("open", () => {
   console.log("Connected to MongoDB");
 });
 
+app.get('/', (req, res) =>  res.send('App is running yaay!'));
+
+
+
+
 ///////////////////////////////////// Verify Users ///////////////////////////////////
 app.post("/verifyOtp", async (req, res) => {
   try {
