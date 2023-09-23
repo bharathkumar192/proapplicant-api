@@ -39,7 +39,7 @@ const searchJson3 = XLSX.utils.sheet_to_json(search_sheet3);
 const searchFile4 = XLSX.readFile(__dirname + "/THE_Rank.xlsx");
 const search_sheet4 = searchFile4.Sheets[searchFile4.SheetNames[0]];
 const searchJson4 = XLSX.utils.sheet_to_json(search_sheet4);
-console.log(searchJson);
+// console.log(searchJson);
 let CouseNames = searchJson2
   .filter((item) => item.Name.toLowerCase())
   .map((val) => {
@@ -125,11 +125,6 @@ db.once("open", () => {
   console.log("Connected to MongoDB");
 });
 
-app.get('/', (req, res) =>  res.send('App is running yaay!'));
-
-
-
-
 ///////////////////////////////////// Verify Users ///////////////////////////////////
 app.post("/verifyOtp", async (req, res) => {
   try {
@@ -153,9 +148,51 @@ app.post("/sendOtp", async (req, res) => {
 
 ///////////////////////////////////// Check if user is pro or not /////////////////////
 
+// app.get("/pro/:email", async (req, res) => {
+//   try {
+//     const email = req.params.email;
+//     const isOwner = await Owners.findOne({ email });
+//     const isAdmin = await Admins.findOne({ email });
+//     console.log('===================================')
+//     console.log(isOwner);
+//     console.log(isAdmin);
+//     if (isOwner || isAdmin) {
+//       return res.json({ adminOrOwner: true });
+//     }
+//     let user = await Customer.findOne({ email });
+
+//     if (
+//       user &&
+//       user.subscriptions[`Tool_1`].expiryDate >
+//       user.subscriptions[`Tool_1`].joinedAt
+//     ) {
+//       return res.json({ pro: true });
+//     } else {
+//       return res.json({ pro: false });
+//     }
+//   } catch (error) {
+//     return res.json({ error: "Could not get user details" });
+//   }
+// });
+
 app.get("/pro/:email", async (req, res) => {
   try {
-    let user = await Customer.findOne({ email: req.params.email });
+    const email = req.params.email;
+
+    // Check if the email exists in Owners or Admins collections
+    const isOwner = await Owner.findOne({ email });
+    const isAdmin = await Admin.findOne({ email });
+
+    if (isOwner || isAdmin) {
+      return res.json({ adminOrOwner: true });
+    }
+
+    const user = await Customer.findOne({ email });
+
+    if (!user) {
+      return res.json({ error: "User not found" });
+    }
+
     if (
       user.subscriptions[`Tool_1`].expiryDate >
       user.subscriptions[`Tool_1`].joinedAt
@@ -164,8 +201,9 @@ app.get("/pro/:email", async (req, res) => {
     } else {
       return res.json({ pro: false });
     }
-  } catch {
-    return res.json({ error: "Could not get user details" });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.json({ error: "User details could not be found" });
   }
 });
 
