@@ -26,7 +26,6 @@ const searchJson = XLSX.utils.sheet_to_json(search_sheet);
 const searchFile1 = XLSX.readFile(__dirname + "/OS_Rankings.xlsx");
 const search_sheet1 = searchFile1.Sheets[searchFile1.SheetNames[0]];
 const searchJson1 = XLSX.utils.sheet_to_json(search_sheet1);
-
 // Program Details
 const searchFile2 = XLSX.readFile(__dirname + "/Programs.xlsx");
 const search_sheet2 = searchFile2.Sheets[searchFile2.SheetNames[0]];
@@ -39,7 +38,18 @@ const searchJson3 = XLSX.utils.sheet_to_json(search_sheet3);
 const searchFile4 = XLSX.readFile(__dirname + "/THE_Rank.xlsx");
 const search_sheet4 = searchFile4.Sheets[searchFile4.SheetNames[0]];
 const searchJson4 = XLSX.utils.sheet_to_json(search_sheet4);
-// console.log(searchJson);
+// USA Crime
+const searchFile5 = XLSX.readFile(__dirname + "/USA.csv");
+const search_sheet5 = searchFile5.Sheets[searchFile5.SheetNames[0]];
+const searchJson5 = XLSX.utils.sheet_to_json(search_sheet5);
+// Canada Crime
+const searchFile6 = XLSX.readFile(__dirname + "/Canada.csv");
+const search_sheet6 = searchFile6.Sheets[searchFile6.SheetNames[0]];
+const searchJson6 = XLSX.utils.sheet_to_json(search_sheet6);
+//UK Crime
+const searchFile7 = XLSX.readFile(__dirname + "/UK.csv");
+const search_sheet7 = searchFile7.Sheets[searchFile7.SheetNames[0]];
+const searchJson7 = XLSX.utils.sheet_to_json(search_sheet7);
 let CouseNames = searchJson2
   .filter((item) => item.Name.toLowerCase())
   .map((val) => {
@@ -64,6 +74,7 @@ OAuth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
 const sendOtp = async (number) => {
   try {
     let otp = Math.floor(Math.random() * 100000);
+    console.log(otp)
     let exists = await OtpModel.findOne({ phnum: number });
     if (exists) {
       exists.otp = otp;
@@ -148,51 +159,9 @@ app.post("/sendOtp", async (req, res) => {
 
 ///////////////////////////////////// Check if user is pro or not /////////////////////
 
-// app.get("/pro/:email", async (req, res) => {
-//   try {
-//     const email = req.params.email;
-//     const isOwner = await Owners.findOne({ email });
-//     const isAdmin = await Admins.findOne({ email });
-//     console.log('===================================')
-//     console.log(isOwner);
-//     console.log(isAdmin);
-//     if (isOwner || isAdmin) {
-//       return res.json({ adminOrOwner: true });
-//     }
-//     let user = await Customer.findOne({ email });
-
-//     if (
-//       user &&
-//       user.subscriptions[`Tool_1`].expiryDate >
-//       user.subscriptions[`Tool_1`].joinedAt
-//     ) {
-//       return res.json({ pro: true });
-//     } else {
-//       return res.json({ pro: false });
-//     }
-//   } catch (error) {
-//     return res.json({ error: "Could not get user details" });
-//   }
-// });
-
 app.get("/pro/:email", async (req, res) => {
   try {
-    const email = req.params.email;
-
-    // Check if the email exists in Owners or Admins collections
-    const isOwner = await Owner.findOne({ email });
-    const isAdmin = await Admin.findOne({ email });
-
-    if (isOwner || isAdmin) {
-      return res.json({ adminOrOwner: true });
-    }
-
-    const user = await Customer.findOne({ email });
-
-    if (!user) {
-      return res.json({ error: "User not found" });
-    }
-
+    let user = await Customer.findOne({ email: req.params.email });
     if (
       user.subscriptions[`Tool_1`].expiryDate >
       user.subscriptions[`Tool_1`].joinedAt
@@ -201,9 +170,8 @@ app.get("/pro/:email", async (req, res) => {
     } else {
       return res.json({ pro: false });
     }
-  } catch (error) {
-    console.error("Error:", error);
-    return res.json({ error: "User details could not be found" });
+  } catch {
+    return res.json({ error: "Could not get user details" });
   }
 });
 
@@ -574,23 +542,6 @@ app.post("/addNewTool", async (req, res) => {
 
 //  find users based on tool who has a joining date of anykind.
 
-app.post("/getUserInfo/:param", async (req, res) => {
-  try {
-    let param = req.params.param;
-    console.log(param);
-    console.log(req.body.val);
-    let customer = await Customer.findOne({ cust_name: req.body.val });
-    console.log(customer);
-    if (customer) {
-      res.json(customer);
-    } else {
-      res.json({});
-    }
-  } catch {
-    res.status(404).json({});
-  }
-});
-
 app.get("/usersByTool/:toolName", async (req, res) => {
   try {
     const toolName = req.params.toolName;
@@ -769,206 +720,151 @@ app.post("/new", async (req, res) => {
   }
 });
 // search University
-app.get("/searchUniv", (req, res) => {
-  try {
-    let array = [];
-    for (i of searchJson) {
-      array.push(i.Name);
+app.get("/searchUniv",(req,res)=>{
+  try{
+    let array = []
+    for(i of searchJson){
+      array.push(i.Name)
     }
-    res.json({ data: array });
-  } catch {
-    res.status(500).json({ error: "Could not find university try again" });
+    res.json({data:array})
+  }catch{
+    res.status(500).json({error:"Could not find university try again"})
   }
-});
-app.get("/getCourses/:name", async (req, res) => {
+})
+app.get("/getCourses/:name",async(req,res)=>{
   try {
-    let CouseNames = searchJson2
-      .filter((item) =>
-        item.Name.toLowerCase().includes(
-          req.params.name.replace("%20", " ").toLowerCase()
-        )
-      )
-      .map((val) => {
-        return val["Course Name"];
-      });
-    res.json({ Names: CouseNames });
+    let CouseNames = searchJson2.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase())).map((val)=>{return val["Course Name"]})
+    res.json({Names:CouseNames})
   } catch (error) {
-    res.status(500).json({ err: error });
+    res.status(500).json({err:error})
   }
-});
-app.get("/getUniversityData/:name", async (req, res) => {
+})
+app.patch("/setSaveUniv/:userEmail",async(req,res)=>{
   try {
-    let OSRankings = searchJson1.filter((item) =>
-      item.Name.toLowerCase().includes(
-        req.params.name.replace("%20", " ").toLowerCase()
-      )
-    );
-    let USRankings = searchJson3.filter((item) =>
-      item.Name.toLowerCase().includes(
-        req.params.name.replace("%20", " ").toLowerCase()
-      )
-    );
-    let THERankings = searchJson4.filter((item) =>
-      item.Name.toLowerCase().includes(
-        req.params.name.replace("%20", " ").toLowerCase()
-      )
-    );
-    let CoursesDetails = searchJson2.filter((item) =>
-      item.Name.toLowerCase().includes(
-        req.params.name.replace("%20", " ").toLowerCase()
-      )
-    );
-    console.log(OSRankings);
-    const res2 = await fetch(
-      `https://geocode.maps.co/search?q=${req.params.name.toLowerCase()}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    )
-      .then((r) => r.json())
-      .then((r) => {
-        return r;
-      });
-    const res3 = await fetch(
-      `https://geocode.maps.co/search?q=${
-        USRankings[0].Address.split(",")[
-          USRankings[0].Address.split(",").length - 2
-        ]
-      }}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    )
-      .then((r) => r.json())
-      .then((r) => {
-        return r;
-      });
-    if (res3.length == 0) {
-      const res3 = await fetch(
-        `https://geocode.maps.co/search?q=${
-          USRankings[0].Address.split(",")[
-            USRankings[0].Address.split(",").length - 3
-          ]
-        }}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
-        .then((r) => r.json())
-        .then((r) => {
-          return r;
-        });
-    }
-    console.log(res3);
-    let json = await fetch(
-      `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${res2[0].lat},${res2[0].lon}?unitGroup=metric&key=ALTC49LEQYCMGSZLTU6CS23MU`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    )
-      .then((res) => res.json())
-      .then((res) => {
-        return res;
-      });
-    console.log(json);
-    let json1 = await fetch(
-      `https://api.waqi.info/feed/${
-        USRankings[0].Address.split(",")[
-          USRankings[0].Address.split(",").length - 2
-        ]
-      }/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    )
-      .then((res) => res.json())
-      .then((res) => {
-        return res;
-      });
-    if (json1.status !== "ok") {
-      json1 = await fetch(
-        `https://api.waqi.info/feed/${
-          USRankings[0].Address.split(",")[
-            USRankings[0].Address.split(",").length - 3
-          ]
-        }/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
-        .then((res) => res.json())
-        .then((res) => {
-          return res;
-        });
-    }
-    let json2 = await fetch(
-      "https://public.opendatasoft.com/api/records/1.0/search/?dataset=geonames-all-cities-with-a-population-1000&q=" +
-        USRankings[0].Address.split(",")[
-          USRankings[0].Address.split(",").length - 3
-        ] +
-        "&sort=population&facet=country",
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    )
-      .then((res) => res.json())
-      .then((res) => {
-        return res;
-      });
-    if (json2.records.length == 0) {
-      json2 = await fetch(
-        "https://public.opendatasoft.com/api/records/1.0/search/?dataset=geonames-all-cities-with-a-population-1000&q=" +
-          USRankings[0].Address.split(",")[
-            USRankings[0].Address.split(",").length - 2
-          ] +
-          "&sort=population&facet=country",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
-        .then((res) => res.json())
-        .then((res) => {
-          return res;
-        });
-    }
-    res.json({
-      AQI: json1,
-      QS_Rankings: OSRankings[0],
-      USN_Rankings: USRankings[0],
-      THE_Rankings: THERankings[0],
-      ProgramDetails: CoursesDetails,
-      Geography: res2,
-      Weather: json,
-      city: res3,
-      Population: json2.records[0],
-    });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ Error: "Cant find the Details for this university" });
+    let post = await Customer.updateOne({email:req.params.userEmail},{$set:{saved_universities:req.body.saved_univ}})
+    res.status(200).json({success:true})
+  } catch (error) {
+    res.status(404).json({error:error})
   }
-});
+})
+app.get("/getSaveUniv/:userEmail",async(req,res)=>{
+  try {
+    let post = await Customer.findOne({email:req.params.userEmail})
+    let websitelinks = []
+    let address = []
+    console.log(post)
+    for(i in post.saved_universities){
+      let getData  = searchJson3.filter(item=>item.Name.toLowerCase().includes(post.saved_universities[i].replace("%20"," ").toLowerCase()))
+      let getData1  = searchJson4.filter(item=>item.Name.toLowerCase().includes(post.saved_universities[i].replace("%20"," ").toLowerCase()))
+      if(getData.length==0){
+        websitelinks.push("Not Available")
+        if(getData1.length==0){
+          address.push("Not Available")
+        }
+        else{
+          address.push(getData1[0]["Address"])
+        }
+      }
+      else{
+        websitelinks.push(getData[0]["Website link"])
+        address.push(getData[0]["Address"])
+      }
+    }
+    res.status(200).json({names:post.saved_universities,links:websitelinks,address:address})
+  } catch (error) {
+    res.status(404).json({error:error})
+  }
+})
+app.get("/getUniversityData/:name",async(req,res)=>{
+  try{
+    console.log("1st")
+    let OSRankings = searchJson1.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
+    let USRankings = searchJson3.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
+    let THERankings = searchJson4.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
+    let CoursesDetails = searchJson2.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
+    let crime = []
+    let current_city = "";
+    console.log("2nd")
+    const res2 = await fetch(`https://geocode.maps.co/search?q=${req.params.name.toLowerCase()}`,{method:"GET",headers:{
+      "Content-Type":"application/json",
+    }}).then((r)=>r.json()).then((r)=>{return r})
+    let json1={};
+    console.log("3rd")
+    if(USRankings.length!==0){
+        for(let i=0;i<USRankings[0].Address.split(",").length;i++){
+          json1 = await fetch(`https://api.waqi.info/feed/${USRankings[0].Address.split(",")[i]}/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,{method:"GET",headers:{
+            "Content-Type":"application/json",
+          }}).then((res)=>res.json()).then((res)=>{return res})
+          if(json1.status!=="error"){     
+            current_city = i;
+            break 
+          }
+        }
+        if(json1.status=="error"){
+          current_city = USRankings[0].Address.split(",")[1].replace(" ","");
+        }else{
+          console.log(current_city)
+          current_city= USRankings[0].Address.split(",")[current_city].replace(" ","")
+        }
+    }else{
+      for(let i=3;i<6;i++){
+        json1 = await fetch(`https://api.waqi.info/feed/${res2[0].display_name.split(",")[i]}/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,{method:"GET",headers:{
+          "Content-Type":"application/json",
+        }}).then((res)=>res.json()).then((res)=>{return res})
+        if(json1.status!=="error"){     
+          current_city = i;
+          break 
+        }
+      }
+      current_city= res2[0].display_name.split(",")[current_city].replace(" ","")
+    }
+    console.log("here")
+    console.log(current_city)
+    const res3 = await fetch(`https://geocode.maps.co/search?q=${current_city}`,{method:"GET",headers:{
+      "Content-Type":"application/json",
+    }}).then((r)=>r.json()).then((r)=>{return r})
+    let country = res2[0].display_name.split(",")[res2[0].display_name.split(",").length-1];
+    console.log(country)
+    if(country.includes("United Kingdom") || country.includes("UK")){
+      crime= await searchJson7.filter(item=>item.Institution.toLowerCase().includes(current_city.toLowerCase().replace(" ","")))
+      console.log(crime)
+    }else if(country.includes("United States") || country.includes("USA")){
+      crime= await searchJson5.filter(item=>item.City.toLowerCase().includes(current_city.toLowerCase().replace(" ","")))
+      console.log(crime)
+    }
+    else if(country.includes("Canada")){
+      crime= await searchJson6.filter(item=>item.City.toLowerCase().includes(current_city.replace(" ","").toLowerCase()))
+    }
+    
+    let json = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${res2[0].lat},${res2[0].lon}?unitGroup=metric&key=ALTC49LEQYCMGSZLTU6CS23MU`,{method:"GET",headers:{
+      "Content-Type":"application/json",
+    }}).then((res)=>res.json()).then((res)=>{return res})
+      let json2 = await fetch('https://public.opendatasoft.com/api/records/1.0/search/?dataset=geonames-all-cities-with-a-population-1000&q='+current_city+'&sort=population&facet=country',{method:"GET",headers:{
+        "Content-Type":"application/json",
+      }}).then((res)=>res.json()).then((res)=>{return res})
+      res.json({AQI:json1,QS_Rankings:OSRankings[0],USN_Rankings:USRankings[0],THE_Rankings:THERankings[0],ProgramDetails:CoursesDetails,Geography:res2,Weather:json,city:res3,Population:json2.records[0],crime:crime[0],cityName:current_city})
+  }catch(err){
+    res.status(500).json({"Error":"Cant find the Details for this university"})
+  }
+})  
+app.get("/getCredits/:userEmail",async (req,res)=>{
+  let credits = await Customer.findOne({email:req.params.userEmail})
+  res.json({credits:credits.search_credits})
+})
+app.patch("/setCredits/:userEmail",async (req,res)=>{
+  try{
+    let credits = await Customer.findOne({email:req.params.userEmail})
+    if(req.body.type=="add"){
+      let post = await Customer.updateOne({email:req.params.userEmail},{$set:{search_credits:req.body.credits}})
+    }
+    if(credits.search_credits>0){
+      if(req.body.type=="remove"){
+        let post = await Customer.updateOne({email:req.params.userEmail},{$set:{search_credits:credits.search_credits-req.body.credits}})
+      }
+    }
+    credits = await Customer.findOne({email:req.params.userEmail})
+    res.json({credits:credits.search_credits})
+  }catch(err){
+    res.json({"error":"User Doesn't Exists"})
+  }
+})

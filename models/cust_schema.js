@@ -75,6 +75,14 @@ const customerSchema = new mongoose.Schema(
         amt: { type: Number, default: 0 },
       },
     },
+    saved_universities:{
+      type:[String],
+      default:[]
+    },
+    search_credits:{
+      type:Number,
+      default:15,
+    },
   },
   {
     versionKey: false, // Disable the version key
