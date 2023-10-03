@@ -4,6 +4,7 @@ const AdmitsSchema = new mongoose.Schema({
   name: {
     type: String,
   },
+  phnum: { type: String, default: "Pre Added" },
   intake: {
     type: String,
   },

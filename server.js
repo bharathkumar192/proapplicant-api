@@ -574,6 +574,23 @@ app.post("/addNewTool", async (req, res) => {
 
 //  find users based on tool who has a joining date of anykind.
 
+app.post("/getUserInfo/:param", async (req, res) => {
+  try {
+    let param = req.params.param;
+    console.log(param);
+    console.log(req.body.val);
+    let customer = await Customer.findOne({ cust_name: req.body.val });
+    console.log(customer);
+    if (customer) {
+      res.json(customer);
+    } else {
+      res.json({});
+    }
+  } catch {
+    res.status(404).json({});
+  }
+});
+
 app.get("/usersByTool/:toolName", async (req, res) => {
   try {
     const toolName = req.params.toolName;
