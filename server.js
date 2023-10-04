@@ -783,7 +783,7 @@ app.get("/getUniversityData/:name",async(req,res)=>{
     let THERankings = searchJson4.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
     let CoursesDetails = searchJson2.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
     let crime = []
-    let current_city = "";
+    let current_city = 3;
     console.log("2nd")
     const res2 = await fetch(`https://geocode.maps.co/search?q=${req.params.name.toLowerCase()}`,{method:"GET",headers:{
       "Content-Type":"application/json",
@@ -851,6 +851,14 @@ app.get("/getCredits/:userEmail",async (req,res)=>{
   let credits = await Customer.findOne({email:req.params.userEmail})
   res.json({credits:credits.search_credits})
 })
+app.get("/getsavedUsers/:UnivName",async(req,res)=>{
+  try{
+    let response = await Customer.find({ saved_universities: req.params.UnivName });
+    res.json(response);
+  }catch(err){
+    res.status(404).json("Not Found")
+  }
+})
 app.patch("/setCredits/:userEmail",async (req,res)=>{
   try{
     let credits = await Customer.findOne({email:req.params.userEmail})
@@ -866,5 +874,13 @@ app.patch("/setCredits/:userEmail",async (req,res)=>{
     res.json({credits:credits.search_credits})
   }catch(err){
     res.json({"error":"User Doesn't Exists"})
+  }
+})
+app.get("/getAllSavedUsers/",async (req, res) => {
+  try {
+    const Users = await Customer.find({"saved_universities.0":{$exists:true}})
+    res.json(Users);
+  }catch(err){
+    res.status(500).json({error:"Internal Sever Error"})
   }
 })
