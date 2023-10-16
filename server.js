@@ -74,7 +74,7 @@ OAuth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
 const sendOtp = async (number) => {
   try {
     let otp = Math.floor(Math.random() * 100000);
-    console.log(otp)
+    console.log(otp);
     let exists = await OtpModel.findOne({ phnum: number });
     if (exists) {
       exists.otp = otp;
@@ -113,7 +113,32 @@ const sendMail = async ({ cust_id, reference_id, email }) => {
     to: email,
     subject: "Welcome to Proapplicant.",
     text: "Thanks For Signing up to our page",
-    html: `<h1>Thanks for Signing Up to Proapplicant</h1><p>Your Customer Id is <b> ${cust_id} </b></p><p>Your Referral Id is <b>${reference_id}</b></p><p>Contact Support : 9849291321,proapplicantsubs@gmail.com</p>`,
+    html: `<html>
+    <head>
+        <title>Welcome to Proapplicant</title>
+    </head>
+    <body>
+        <h1>Welcome to Proapplicant</h1>
+        <p>Dear [Your Name],</p>
+        
+        <p>Thank you for signing up with Proapplicant! We're excited to have you as part of our community.</p>
+        
+        <p>Your Customer ID is: <strong>${cust_id}</strong></p>
+        
+        <p>Your Referral ID is: <strong>${reference_id}</strong></p>
+        
+        <p>If you have any questions, need assistance, or want to learn more about our services, please don't hesitate to reach out to our support team:</p>
+        
+        <p>Customer Support: 984-929-1321</p>
+        
+        <p>Email: <a href="mailto:proapplicantsubs@gmail.com">proapplicantsubs@gmail.com</a></p>
+        
+        <p>Once again, welcome to Proapplicant. We look forward to helping you achieve your goals.</p>
+        
+        <p>Best regards,<br>
+        The Proapplicant Team</p>
+    </body>
+    </html>`,
   };
   const result = await transport.sendMail(mailOptions);
   return result;
@@ -162,10 +187,8 @@ app.post("/sendOtp", async (req, res) => {
 app.get("/pro/:email", async (req, res) => {
   try {
     let user = await Customer.findOne({ email: req.params.email });
-    if (
-      user.subscriptions[`Tool_1`].expiryDate >
-      user.subscriptions[`Tool_1`].joinedAt
-    ) {
+    let d = new Date.now();
+    if (user.subscriptions[`Tool_1`].expiryDate > d) {
       return res.json({ pro: true });
     } else {
       return res.json({ pro: false });
@@ -220,6 +243,30 @@ app.get("/hints", async (req, res) => {
 });
 
 ////////////////////////////////////    START ADMINS   //////////////////////////////////////////////
+
+app.post("/editCustAdmin/:id", async (req, res) => {
+  try {
+    let name = req.body.name;
+    let cust = await Customer.findById(req.params.id);
+    cust.admin_name = name;
+    cust.save();
+    res.json({ success: "Updated Successfully" });
+  } catch {
+    res.json({ error: "Could not update details" });
+  }
+});
+
+app.post("/forgotPass", async (req, res) => {
+  try {
+    let { password, no } = req.body;
+    let user = await Customer.findOne({ phnum: no });
+    user.password = password;
+    user.save();
+    res.json({ success: "Updated Password Successfully" });
+  } catch {
+    res.json({ error: "Could not update password" });
+  }
+});
 
 // function to generate random 5 digit number
 function generateRandomNumber() {
@@ -720,167 +767,315 @@ app.post("/new", async (req, res) => {
   }
 });
 // search University
-app.get("/searchUniv",(req,res)=>{
-  try{
-    let array = []
-    for(i of searchJson){
-      array.push(i.Name)
+app.get("/searchUniv", (req, res) => {
+  try {
+    let array = [];
+    for (i of searchJson) {
+      array.push(i.Name);
     }
-    res.json({data:array})
-  }catch{
-    res.status(500).json({error:"Could not find university try again"})
+    res.json({ data: array });
+  } catch {
+    res.status(500).json({ error: "Could not find university try again" });
   }
-})
-app.get("/getCourses/:name",async(req,res)=>{
+});
+app.get("/getCourses/:name", async (req, res) => {
   try {
-    let CouseNames = searchJson2.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase())).map((val)=>{return val["Course Name"]})
-    res.json({Names:CouseNames})
+    let CouseNames = searchJson2
+      .filter((item) =>
+        item.Name.toLowerCase().includes(
+          req.params.name.replace("%20", " ").toLowerCase()
+        )
+      )
+      .map((val) => {
+        return val["Course Name"];
+      });
+    res.json({ Names: CouseNames });
   } catch (error) {
-    res.status(500).json({err:error})
+    res.status(500).json({ err: error });
   }
-})
-app.patch("/setSaveUniv/:userEmail",async(req,res)=>{
+});
+app.patch("/setSaveUniv/:userEmail", async (req, res) => {
   try {
-    let post = await Customer.updateOne({email:req.params.userEmail},{$set:{saved_universities:req.body.saved_univ}})
-    res.status(200).json({success:true})
+    let post = await Customer.updateOne(
+      { email: req.params.userEmail },
+      { $set: { saved_universities: req.body.saved_univ } }
+    );
+    res.status(200).json({ success: true });
   } catch (error) {
-    res.status(404).json({error:error})
+    res.status(404).json({ error: error });
   }
-})
-app.get("/getSaveUniv/:userEmail",async(req,res)=>{
+});
+app.get("/getSaveUniv/:userEmail", async (req, res) => {
   try {
-    let post = await Customer.findOne({email:req.params.userEmail})
-    let websitelinks = []
-    let address = []
-    console.log(post)
-    for(i in post.saved_universities){
-      let getData  = searchJson3.filter(item=>item.Name.toLowerCase().includes(post.saved_universities[i].replace("%20"," ").toLowerCase()))
-      let getData1  = searchJson4.filter(item=>item.Name.toLowerCase().includes(post.saved_universities[i].replace("%20"," ").toLowerCase()))
-      if(getData.length==0){
-        websitelinks.push("Not Available")
-        if(getData1.length==0){
-          address.push("Not Available")
+    let post = await Customer.findOne({ email: req.params.userEmail });
+    let websitelinks = [];
+    let address = [];
+    console.log(post);
+    for (i in post.saved_universities) {
+      let getData = searchJson3.filter((item) =>
+        item.Name.toLowerCase().includes(
+          post.saved_universities[i].replace("%20", " ").toLowerCase()
+        )
+      );
+      let getData1 = searchJson4.filter((item) =>
+        item.Name.toLowerCase().includes(
+          post.saved_universities[i].replace("%20", " ").toLowerCase()
+        )
+      );
+      if (getData.length == 0) {
+        websitelinks.push("Not Available");
+        if (getData1.length == 0) {
+          address.push("Not Available");
+        } else {
+          address.push(getData1[0]["Address"]);
         }
-        else{
-          address.push(getData1[0]["Address"])
-        }
-      }
-      else{
-        websitelinks.push(getData[0]["Website link"])
-        address.push(getData[0]["Address"])
+      } else {
+        websitelinks.push(getData[0]["Website link"]);
+        address.push(getData[0]["Address"]);
       }
     }
-    res.status(200).json({names:post.saved_universities,links:websitelinks,address:address})
+    res.status(200).json({
+      names: post.saved_universities,
+      links: websitelinks,
+      address: address,
+    });
   } catch (error) {
-    res.status(404).json({error:error})
+    res.status(404).json({ error: error });
   }
-})
-app.get("/getUniversityData/:name",async(req,res)=>{
-  try{
-    console.log("1st")
-    let OSRankings = searchJson1.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
-    let USRankings = searchJson3.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
-    let THERankings = searchJson4.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
-    let CoursesDetails = searchJson2.filter(item=>item.Name.toLowerCase().includes(req.params.name.replace("%20"," ").toLowerCase().split(",")[0]))
-    let crime = []
+});
+app.get("/getUniversityData/:name", async (req, res) => {
+  try {
+    console.log("1st");
+    let OSRankings = searchJson1.filter((item) =>
+      item.Name.toLowerCase().includes(
+        req.params.name.replace("%20", " ").toLowerCase().split(",")[0]
+      )
+    );
+    let USRankings = searchJson3.filter((item) =>
+      item.Name.toLowerCase().includes(
+        req.params.name.replace("%20", " ").toLowerCase().split(",")[0]
+      )
+    );
+    let THERankings = searchJson4.filter((item) =>
+      item.Name.toLowerCase().includes(
+        req.params.name.replace("%20", " ").toLowerCase().split(",")[0]
+      )
+    );
+    let CoursesDetails = searchJson2.filter((item) =>
+      item.Name.toLowerCase().includes(
+        req.params.name.replace("%20", " ").toLowerCase().split(",")[0]
+      )
+    );
+    let crime = [];
     let current_city = 3;
-    console.log("2nd")
-    const res2 = await fetch(`https://geocode.maps.co/search?q=${req.params.name.toLowerCase()}`,{method:"GET",headers:{
-      "Content-Type":"application/json",
-    }}).then((r)=>r.json()).then((r)=>{return r})
-    let json1={};
-    console.log("3rd")
-    if(USRankings.length!==0){
-        for(let i=0;i<USRankings[0].Address.split(",").length;i++){
-          json1 = await fetch(`https://api.waqi.info/feed/${USRankings[0].Address.split(",")[i]}/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,{method:"GET",headers:{
-            "Content-Type":"application/json",
-          }}).then((res)=>res.json()).then((res)=>{return res})
-          if(json1.status!=="error"){     
-            current_city = i;
-            break 
+    console.log("2nd");
+    const res2 = await fetch(
+      `https://geocode.maps.co/search?q=${req.params.name.toLowerCase()}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((r) => r.json())
+      .then((r) => {
+        return r;
+      });
+    let json1 = {};
+    console.log("3rd");
+    if (USRankings.length !== 0) {
+      for (let i = 0; i < USRankings[0].Address.split(",").length; i++) {
+        json1 = await fetch(
+          `https://api.waqi.info/feed/${
+            USRankings[0].Address.split(",")[i]
+          }/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
           }
-        }
-        if(json1.status=="error"){
-          current_city = USRankings[0].Address.split(",")[1].replace(" ","");
-        }else{
-          console.log(current_city)
-          current_city= USRankings[0].Address.split(",")[current_city].replace(" ","")
-        }
-    }else{
-      for(let i=3;i<6;i++){
-        json1 = await fetch(`https://api.waqi.info/feed/${res2[0].display_name.split(",")[i]}/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,{method:"GET",headers:{
-          "Content-Type":"application/json",
-        }}).then((res)=>res.json()).then((res)=>{return res})
-        if(json1.status!=="error"){     
+        )
+          .then((res) => res.json())
+          .then((res) => {
+            return res;
+          });
+        if (json1.status !== "error") {
           current_city = i;
-          break 
+          break;
         }
       }
-      current_city= res2[0].display_name.split(",")[current_city].replace(" ","")
+      if (json1.status == "error") {
+        current_city = USRankings[0].Address.split(",")[1].replace(" ", "");
+      } else {
+        console.log(current_city);
+        current_city = USRankings[0].Address.split(",")[current_city].replace(
+          " ",
+          ""
+        );
+      }
+    } else {
+      for (let i = 3; i < 6; i++) {
+        json1 = await fetch(
+          `https://api.waqi.info/feed/${
+            res2[0].display_name.split(",")[i]
+          }/?token=ce487560a1930392e9ef0925c6230885ad66e4c6`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+          .then((res) => res.json())
+          .then((res) => {
+            return res;
+          });
+        if (json1.status !== "error") {
+          current_city = i;
+          break;
+        }
+      }
+      current_city = res2[0].display_name
+        .split(",")
+        [current_city].replace(" ", "");
     }
-    console.log("here")
-    console.log(current_city)
-    const res3 = await fetch(`https://geocode.maps.co/search?q=${current_city}`,{method:"GET",headers:{
-      "Content-Type":"application/json",
-    }}).then((r)=>r.json()).then((r)=>{return r})
-    let country = res2[0].display_name.split(",")[res2[0].display_name.split(",").length-1];
-    console.log(country)
-    if(country.includes("United Kingdom") || country.includes("UK")){
-      crime= await searchJson7.filter(item=>item.Institution.toLowerCase().includes(current_city.toLowerCase().replace(" ","")))
-      console.log(crime)
-    }else if(country.includes("United States") || country.includes("USA")){
-      crime= await searchJson5.filter(item=>item.City.toLowerCase().includes(current_city.toLowerCase().replace(" ","")))
-      console.log(crime)
+    console.log("here");
+    console.log(current_city);
+    const res3 = await fetch(
+      `https://geocode.maps.co/search?q=${current_city}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((r) => r.json())
+      .then((r) => {
+        return r;
+      });
+    let country =
+      res2[0].display_name.split(",")[
+        res2[0].display_name.split(",").length - 1
+      ];
+    console.log(country);
+    if (country.includes("United Kingdom") || country.includes("UK")) {
+      crime = await searchJson7.filter((item) =>
+        item.Institution.toLowerCase().includes(
+          current_city.toLowerCase().replace(" ", "")
+        )
+      );
+      console.log(crime);
+    } else if (country.includes("United States") || country.includes("USA")) {
+      crime = await searchJson5.filter((item) =>
+        item.City.toLowerCase().includes(
+          current_city.toLowerCase().replace(" ", "")
+        )
+      );
+      console.log(crime);
+    } else if (country.includes("Canada")) {
+      crime = await searchJson6.filter((item) =>
+        item.City.toLowerCase().includes(
+          current_city.replace(" ", "").toLowerCase()
+        )
+      );
     }
-    else if(country.includes("Canada")){
-      crime= await searchJson6.filter(item=>item.City.toLowerCase().includes(current_city.replace(" ","").toLowerCase()))
-    }
-    
-    let json = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${res2[0].lat},${res2[0].lon}?unitGroup=metric&key=ALTC49LEQYCMGSZLTU6CS23MU`,{method:"GET",headers:{
-      "Content-Type":"application/json",
-    }}).then((res)=>res.json()).then((res)=>{return res})
-      let json2 = await fetch('https://public.opendatasoft.com/api/records/1.0/search/?dataset=geonames-all-cities-with-a-population-1000&q='+current_city+'&sort=population&facet=country',{method:"GET",headers:{
-        "Content-Type":"application/json",
-      }}).then((res)=>res.json()).then((res)=>{return res})
-      res.json({AQI:json1,QS_Rankings:OSRankings[0],USN_Rankings:USRankings[0],THE_Rankings:THERankings[0],ProgramDetails:CoursesDetails,Geography:res2,Weather:json,city:res3,Population:json2.records[0],crime:crime[0],cityName:current_city})
-  }catch(err){
-    res.status(500).json({"Error":"Cant find the Details for this university"})
+
+    let json = await fetch(
+      `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${res2[0].lat},${res2[0].lon}?unitGroup=metric&key=ALTC49LEQYCMGSZLTU6CS23MU`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((res) => {
+        return res;
+      });
+    let json2 = await fetch(
+      "https://public.opendatasoft.com/api/records/1.0/search/?dataset=geonames-all-cities-with-a-population-1000&q=" +
+        current_city +
+        "&sort=population&facet=country",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((res) => {
+        return res;
+      });
+    res.json({
+      AQI: json1,
+      QS_Rankings: OSRankings[0],
+      USN_Rankings: USRankings[0],
+      THE_Rankings: THERankings[0],
+      ProgramDetails: CoursesDetails,
+      Geography: res2,
+      Weather: json,
+      city: res3,
+      Population: json2.records[0],
+      crime: crime[0],
+      cityName: current_city,
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ Error: "Cant find the Details for this university" });
   }
-})  
-app.get("/getCredits/:userEmail",async (req,res)=>{
-  let credits = await Customer.findOne({email:req.params.userEmail})
-  res.json({credits:credits.search_credits})
-})
-app.get("/getsavedUsers/:UnivName",async(req,res)=>{
-  try{
-    let response = await Customer.find({ saved_universities: req.params.UnivName });
+});
+app.get("/getCredits/:userEmail", async (req, res) => {
+  let credits = await Customer.findOne({ email: req.params.userEmail });
+  res.json({ credits: credits.search_credits });
+});
+app.get("/getsavedUsers/:UnivName", async (req, res) => {
+  try {
+    let response = await Customer.find({
+      saved_universities: req.params.UnivName,
+    });
     res.json(response);
-  }catch(err){
-    res.status(404).json("Not Found")
+  } catch (err) {
+    res.status(404).json("Not Found");
   }
-})
-app.patch("/setCredits/:userEmail",async (req,res)=>{
-  try{
-    let credits = await Customer.findOne({email:req.params.userEmail})
-    if(req.body.type=="add"){
-      let post = await Customer.updateOne({email:req.params.userEmail},{$set:{search_credits:req.body.credits}})
+});
+app.patch("/setCredits/:userEmail", async (req, res) => {
+  try {
+    let credits = await Customer.findOne({ email: req.params.userEmail });
+    if (req.body.type == "add") {
+      let post = await Customer.updateOne(
+        { email: req.params.userEmail },
+        { $set: { search_credits: req.body.credits } }
+      );
     }
-    if(credits.search_credits>0){
-      if(req.body.type=="remove"){
-        let post = await Customer.updateOne({email:req.params.userEmail},{$set:{search_credits:credits.search_credits-req.body.credits}})
+    if (credits.search_credits > 0) {
+      if (req.body.type == "remove") {
+        let post = await Customer.updateOne(
+          { email: req.params.userEmail },
+          {
+            $set: { search_credits: credits.search_credits - req.body.credits },
+          }
+        );
       }
     }
-    credits = await Customer.findOne({email:req.params.userEmail})
-    res.json({credits:credits.search_credits})
-  }catch(err){
-    res.json({"error":"User Doesn't Exists"})
+    credits = await Customer.findOne({ email: req.params.userEmail });
+    res.json({ credits: credits.search_credits });
+  } catch (err) {
+    res.json({ error: "User Doesn't Exists" });
   }
-})
-app.get("/getAllSavedUsers/",async (req, res) => {
+});
+app.get("/getAllSavedUsers/", async (req, res) => {
   try {
-    const Users = await Customer.find({"saved_universities.0":{$exists:true}})
+    const Users = await Customer.find({
+      "saved_universities.0": { $exists: true },
+    });
     res.json(Users);
-  }catch(err){
-    res.status(500).json({error:"Internal Sever Error"})
+  } catch (err) {
+    res.status(500).json({ error: "Internal Sever Error" });
   }
-})
+});
