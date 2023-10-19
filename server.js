@@ -187,7 +187,7 @@ app.post("/sendOtp", async (req, res) => {
 app.get("/pro/:email", async (req, res) => {
   try {
     let user = await Customer.findOne({ email: req.params.email });
-    let d = new Date.now();
+    let d = Date.now();
     if (user.subscriptions[`Tool_1`].expiryDate > d) {
       return res.json({ pro: true });
     } else {
