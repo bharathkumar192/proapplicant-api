@@ -2,6 +2,9 @@ const mongoose = require("mongoose");
 
 const adminSchema = new mongoose.Schema(
   {
+    date: {
+      type: String,
+    },
     name: {
       type: String,
       required: true,
@@ -47,6 +50,9 @@ const adminSchema = new mongoose.Schema(
 adminSchema.pre("save", function (next) {
   if (!this.admin_id) {
     this.admin_id = "AD" + generateRandomNumber();
+  }
+  if (!this.date) {
+    this.date = new Date(Date.now()).toString().split("GMT")[0];
   }
   next();
 });
