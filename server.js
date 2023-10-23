@@ -836,7 +836,7 @@ app.get("/getUniversityData/:name",async(req,res)=>{
       crime= await searchJson6.filter(item=>item.City.toLowerCase().includes(current_city.replace(" ","").toLowerCase()))
     }
     
-    let json = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${res2[0].lat},${res2[0].lon}?unitGroup=metric&key=ALTC49LEQYCMGSZLTU6CS23MU`,{method:"GET",headers:{
+    let json = await fetch(`https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${res2[0].lat},${res2[0].lon}?unitGroup=metric&key=GEFRCDSC6X42YTBNQU5R2N9GM`,{method:"GET",headers:{
       "Content-Type":"application/json",
     }}).then((res)=>res.json()).then((res)=>{return res})
       let json2 = await fetch('https://public.opendatasoft.com/api/records/1.0/search/?dataset=geonames-all-cities-with-a-population-1000&q='+current_city+'&sort=population&facet=country',{method:"GET",headers:{
